@@ -498,4 +498,4 @@ col.down = c("aquamarine","cornflowerblue","bisque","blueviolet","brown","cadetb
 op = par(bg = "ghostwhite") # Цвет фона
 A2Rplot(hc.mdtwcort, k = clustnum, boxes = FALSE, col.up = "gray50", col.down)      
 
-#=============================================================
+#============================================================
