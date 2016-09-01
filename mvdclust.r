@@ -1,6 +1,8 @@
 # Multivariate dynamic clusterization approach
 # based on adaptive measure DTW+CORT
-# including preliminary factor model analysis
+# including preliminary factor model analysis.
+
+# Mostly russian comments are below.
 
 #=================== ЗАГРУЗКА БИБЛИОТЕК ====================
   library("wmtsa")
@@ -10,12 +12,12 @@
   library("pdc")
   library("cluster")	# silhouette()
   library("TSclust")
-  library("dtw")		# dtw()  
+  library("dtw")	# dtw()  
   options(java.parameters = "-Xmx1024m")
   library("XLConnect")	# loadWorkbook(), getSheets(), readWorksheet(), writeWorksheetToFile()
   library("corrplot")	# corrplot()
-  library("ape")		# as.phylo()
-  library("sparcl")		# ColorDendrogram()
+  library("ape")	# as.phylo()
+  library("sparcl")	# ColorDendrogram()
   source("http://addictedtor.free.fr/packages/A2R/lastVersion/R/code.R") # A2Rplot()
   library("ggdendro")	# ggdendrogram()
   library("parallel")
@@ -132,7 +134,7 @@ for(Vars.comb.curr.cnt in Vars.comb.low.cnt:Vars.comb.high.cnt)
 	###rownames(CorTab99.list[[t]]) <- Vars.name_list.curr
 
 	# Заполнение информации оценки качества по текущей комбинации показателей
-    CombList <- rbind(CombList, list(det = CorTab.comb.det.list[[t]], vars = Vars.comb.curr, cortab = CorTab.comb.list[[t]]))
+	CombList <- rbind(CombList, list(det = CorTab.comb.det.list[[t]], vars = Vars.comb.curr, cortab = CorTab.comb.list[[t]]))
 	CurrCntCombList <- rbind(CurrCntCombList, list(det = CorTab.comb.det.list[[t]], vars = Vars.comb.curr, cortab = CorTab.comb.list[[t]]))
   }
   
@@ -496,57 +498,4 @@ col.down = c("aquamarine","cornflowerblue","bisque","blueviolet","brown","cadetb
 op = par(bg = "ghostwhite") # Цвет фона
 A2Rplot(hc.mdtwcort, k = clustnum, boxes = FALSE, col.up = "gray50", col.down)      
 
-
-
-#=(*)======== ДВУХЭТАПНАЯ МНОГОМЕРНАЯ КЛАСЕРИЗАЦИЯ ===========
-# Динамическая кластеризация CORT+DTW отдельно по каждому показателю с последующим обобщением путем повторной кластеризации
-
-# Входные параметры
-Vars.comb.curr <- CombList.maxdet$vars # Вектор индексов показателей в рассматриваемой комбинации (здесь: "лучшей" комбинации по результатам предыдущего анализа)
-k = 4.5			# степень чувсвительности к поведению
-clustnum = 50	# число желаемых первичных кластеров по первому показателю
-
-# 1 - Вычисление матриц расстояний и иерархий объектов по отдельному показателю
-VarsClustFullList <- list() # Вектор данных, содержащий в каждом элементе: матрицу расстояний банков по отдельному показателю, индекс показателя, наименование показателя
-for (i in 1:length(Vars.comb.curr)) {
-  var.distTab <- diss(Vars[Vars.comb.curr[i]][[1]], "CORT", k = k, deltamethod = "DTW") # 1 из 1 элемент объекта Vars[Vars.comb.curr[t]] типа List
-  var.hc <- hclust(var.distTab, "average")
-  VarsClustFullList <- rbind(VarsClustFullList, list(ind = Vars.comb.curr[i], name = Vars.name_list[Vars.comb.curr[i]], distTab = var.distTab, hc = var.hc))
-
-  # Оценка прогресса выполнения алгоритма
-  print(paste("Progress:", round(i/length(Vars.comb.curr)*100), "%"))
-}
-
-# 2 - Разбиение объектов по кластерам в количестве "clustnum" по отдельному показателю с расчетом силуэтов
-# Очистка предыдущих результатов разбиения по кластерам и вычисления соответствующих силуэтов
-VarsClustFullList <- VarsClustFullList[,which(!names(VarsClustFullList[1,]) %in% c("clusters","silh"))]
-VarsClustResultList <- list()
-for (i in 1:length(Vars.comb.curr)) {
-  clusters = cutree(VarsClustFullList[i,]$hc, k = clustnum)
-  silh <- silhouette(clusters, VarsClustFullList[i,]$distTab)
-  VarsClustResultList <- rbind(VarsClustResultList, list(clusters = clusters, silh = silh))
-}
-VarsClustFullList <- cbind(VarsClustFullList, list = VarsClustResultList) # Объединение результатов кластеризации
-
-# Визуализация: силуэты кластеров
-par(mfrow = c(2, 4)) # Формирование шаблона под диаграммы в 2 строки * 4 столбца
-for (i in 1:length(Vars.comb.curr)) {
-  plot(VarsClustFullList[i,]$silh, main = VarsClustFullList[i,]$name)
-}
-
-# 3 - Формирование сводной матрицы распределения объектов по кластерам для всех показателей
-VarsMultiClust <- matrix(0, Vars.bank_cnt, 0)
-for (i in 1:length(Vars.comb.curr)) {
-  VarsMultiClust <- cbind(VarsMultiClust, VarsClustFullList[i,]$clusters)
-}
-colnames(VarsMultiClust) <- Vars.name_list[Vars.comb.curr]
-# writeWorksheetToFile(paste("VarsMultiClust",clustnum,"clust.xlsx"), data=VarsMultiClust, sheet="VarsMultiClust", startRow=1, startCol = 1) # экспорт в файл
-
-# 4 - Выполнение повторной кластеризации
-MultiClustDist <- diss(VarsMultiClust, "CORT", k = cort.k, deltamethod = "DTW")
-# Зам.: Перед иерархической кластеризацией требуется удаление первого и последующих объектов (строка и столбец), отнесенных по всем показателям к одинаковому по номеру классу
-hcMC <- hclust(MultiClustDist, "average")
-plot(hcMC)
-MC <- cutree(hcMC, k = clustnum)
-
-
+#=============================================================
