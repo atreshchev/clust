@@ -1,8 +1,13 @@
-# Multivariate dynamic clusterization approach based on adaptive measure DTW+CORT
-# including preliminary factor model analysis.
+# BASIS:
+# multivariate dynamic clusterization approach based on adaptive measure DTW+CORT
+# including variates' pre-selection
 
-# APPLICATION AREA: 
-# russian banks' clusterization by dynamics of financial indicators analysis
+# TARGET:
+# clusterization of banking business models on the dynamics of a set of financial indicators
+# (for troubled active banks' detection)
+
+# INPUT DATA: 
+# separate (for each indicator) sheets of financial indicators time-series (monthly) for hundreds of russian banks
 
 # Mostly russian comments are below.
 
